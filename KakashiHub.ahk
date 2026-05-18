@@ -99,7 +99,7 @@ Gui, Add, Text, x198 y0 w2 h250 vRightBorder Background110000
 
 Gui, Font, cFFFFFF s10 Bold
 ; Adicionado BackgroundTrans para o fundo ficar transparente sobre a imagem
-Gui, Add, Text, x10 y5 vTitulo BackgroundTrans, Kakashi BH HUB
+Gui, Add, Text, x10 y5 vTitulo BackgroundTrans, Kakashi HUB
 
 Gui, Font, cFFFFFF s9 Bold
 Gui, Add, Button, x140 y2 w20 h20 gMinimizar, _
