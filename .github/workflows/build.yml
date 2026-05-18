@@ -12,9 +12,9 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v3
 
-    - name: Download AutoHotkey
+    - name: Download AutoHotkey v1
       run: |
-        Invoke-WebRequest -Uri https://www.autohotkey.com/download/ahk.zip -OutFile ahk.zip
+        Invoke-WebRequest -Uri https://www.autohotkey.com/download/1.1/AutoHotkey_1.1.37.02.zip -OutFile ahk.zip
         Expand-Archive ahk.zip -DestinationPath ahk
 
     - name: Compile Script
