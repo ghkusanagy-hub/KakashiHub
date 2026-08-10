@@ -2666,7 +2666,7 @@ class ToolboxWindow:
         
         self.create_flat_button(
             hp_frame,
-            "CALIBRAR HP (F7)",
+            "CALIBRAR HP",
             self.trigger_hp_calibration,
             10, 105, 410, 22
         )
@@ -2716,7 +2716,7 @@ class ToolboxWindow:
         
         self.create_flat_button(
             mp_frame,
-            "CALIBRAR MP (F8)",
+            "CALIBRAR MP",
             self.trigger_mp_calibration,
             10, 105, 410, 22
         )
@@ -2833,7 +2833,7 @@ class ToolboxWindow:
         help_frame.place(x=10, y=508, width=440, height=45)
         
         help_lbl = (
-            "1. HP/MP: Cursor na orbe + F7/F8 para calibrar cor/posição.\n"
+            "1. HP/MP: Clique nos botões de CALIBRAR para obter cor/posição.\n"
             "2. Cidade: Cursor em elemento único de HUD da Cidade (ex: Portal/Waypoint) + F9.\n"
             "3. O Auto Pot age quando as cores de HP/MP caem abaixo dos limites definidos."
         )
@@ -3780,7 +3780,7 @@ class KakashiHubApp:
         log_debug("Starting global hotkey listener...")
         user32 = ctypes.windll.user32
         
-        # Register Alt+1 to Alt+5, Alt+T, Alt+C, F7, F8 hotkeys
+        # Register Alt+1 to Alt+5, Alt+T, Alt+C, Alt+S, F9 hotkeys
         hotkeys = {
             1: (0x0001, 0x31),
             2: (0x0001, 0x32),
@@ -3789,8 +3789,6 @@ class KakashiHubApp:
             5: (0x0001, 0x35),
             6: (0x0001, 0x54), # Alt+T
             7: (0x0001, 0x43), # Alt+C
-            8: (0x0000, 0x76), # F7
-            9: (0x0000, 0x77), # F8
             10: (0x0001, 0x53), # Alt+S (Streamer Mode)
             11: (0x0000, 0x78)  # F9 (Town Calibration)
         }
@@ -3837,14 +3835,6 @@ class KakashiHubApp:
             # Trigger auto clicker toggle in toolbox
             if self.toolbox_instance and tk.Toplevel.winfo_exists(self.toolbox_instance.root):
                 self.toolbox_instance.trigger_autoclicker_hotkey()
-        elif hk_id == 8: # F7
-            # Trigger HP calibration in toolbox
-            if self.toolbox_instance and tk.Toplevel.winfo_exists(self.toolbox_instance.root):
-                self.toolbox_instance.trigger_hp_calibration()
-        elif hk_id == 9: # F8
-            # Trigger MP calibration in toolbox
-            if self.toolbox_instance and tk.Toplevel.winfo_exists(self.toolbox_instance.root):
-                self.toolbox_instance.trigger_mp_calibration()
         elif hk_id == 10: # Alt+S
             self.toggle_streamer_mode()
         elif hk_id == 11: # F9
