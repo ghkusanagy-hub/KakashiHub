@@ -112,6 +112,10 @@ def load_config():
             "license_active": False,
             "license_key": "",
             "current_profile": "PvP",
+            "grail_items": [],
+            "backup_enabled": False,
+            "backup_path": "C:\\Users\\Admin\\Saved Games\\Diablo II Resurrected",
+            "audio_type": "beeps",
             "profiles": {
                 "PvP": DEFAULT_PROFILE.copy(),
                 "MF": DEFAULT_PROFILE.copy(),
@@ -126,6 +130,10 @@ def load_config():
             if "license_active" not in data: data["license_active"] = False
             if "license_key" not in data: data["license_key"] = ""
             if "current_profile" not in data: data["current_profile"] = "PvP"
+            if "grail_items" not in data: data["grail_items"] = []
+            if "backup_enabled" not in data: data["backup_enabled"] = False
+            if "backup_path" not in data: data["backup_path"] = "C:\\Users\\Admin\\Saved Games\\Diablo II Resurrected"
+            if "audio_type" not in data: data["audio_type"] = "beeps"
             if "profiles" not in data: data["profiles"] = {}
             for p in ["PvP", "MF", "Rush"]:
                 if p not in data["profiles"]:
@@ -141,6 +149,10 @@ def load_config():
             "license_active": False,
             "license_key": "",
             "current_profile": "PvP",
+            "grail_items": [],
+            "backup_enabled": False,
+            "backup_path": "C:\\Users\\Admin\\Saved Games\\Diablo II Resurrected",
+            "audio_type": "beeps",
             "profiles": {"PvP": DEFAULT_PROFILE.copy(), "MF": DEFAULT_PROFILE.copy(), "Rush": DEFAULT_PROFILE.copy()}
         }
 
@@ -178,6 +190,7 @@ cfgs = {
 # Global configuration flags
 SOUNDS_ENABLED = True
 PARTICLES_ENABLED = True
+AUDIO_TYPE = "beeps"
 
 # WinAPI Key Event Structs for robust DirectX key injection (SendInput)
 class KEYBDINPUT(ctypes.Structure):
@@ -492,17 +505,24 @@ def play_cyberpunk_beep(sound_type="success"):
         return
     def run_sound():
         try:
-            if sound_type == "success":
-                # Double high beep
-                ctypes.windll.kernel32.Beep(880, 50)
-                time.sleep(0.02)
-                ctypes.windll.kernel32.Beep(1760, 60)
-            elif sound_type == "click":
-                # Fast sharp click
-                ctypes.windll.kernel32.Beep(1200, 30)
-            elif sound_type == "fail":
-                # Low warning buzz
-                ctypes.windll.kernel32.Beep(220, 250)
+            if AUDIO_TYPE == "voice":
+                SND_ASYNC = 0x0001
+                SND_ALIAS = 0x00010000
+                if sound_type == "success":
+                    ctypes.windll.winmm.PlaySoundW("SystemAsterisk", None, SND_ASYNC | SND_ALIAS)
+                elif sound_type == "click":
+                    ctypes.windll.winmm.PlaySoundW("SystemDefault", None, SND_ASYNC | SND_ALIAS)
+                elif sound_type == "fail":
+                    ctypes.windll.winmm.PlaySoundW("SystemHand", None, SND_ASYNC | SND_ALIAS)
+            else:
+                if sound_type == "success":
+                    ctypes.windll.kernel32.Beep(880, 50)
+                    time.sleep(0.02)
+                    ctypes.windll.kernel32.Beep(1760, 60)
+                elif sound_type == "click":
+                    ctypes.windll.kernel32.Beep(1200, 30)
+                elif sound_type == "fail":
+                    ctypes.windll.kernel32.Beep(220, 250)
         except:
             pass
     threading.Thread(target=run_sound, daemon=True).start()
@@ -779,7 +799,9 @@ class ToolboxWindow:
         self.create_sidebar_btn("RUN TIMER", self.show_timer_tab, 210)
         self.create_sidebar_btn("AUTO CLICKER", self.show_autoclicker_tab, 250)
         self.create_sidebar_btn("SETTINGS", self.show_settings_tab, 290)
-        self.create_sidebar_btn("AUTO POT", self.show_autopot_tab, 330)
+        self.create_sidebar_btn("PRIME FORGE", self.show_forge_tab, 330)
+        self.create_sidebar_btn("CUBE RECIPES", self.show_cube_tab, 370)
+        self.create_sidebar_btn("HOLY GRAIL", self.show_grail_tab, 410)
         
         # Runewords Database
         self.runewords_db = [
@@ -972,7 +994,13 @@ class ToolboxWindow:
                 "FASTER BLOCK RATE (FBR) - Com Holy Shield ativo:\n"
                 "  Frame | FBR Necessário\n"
                 "     2  | 0%   <-- Padrão instantâneo com Holy Shield!\n"
-                "     1  | 86%"
+                "     1  | 86%\n\n"
+                "INCREASED ATTACK SPEED (IAS) - Zeal / Smite (C/ Phase Blade):\n"
+                "  * Com aura Fanaticism lvl 20+:\n"
+                "    - Apenas 0% IAS adicional para máximo (4 Frames)\n"
+                "  * Sem Fanaticism (ex: Auradin):\n"
+                "    - 13% IAS (Meta para atingir 4 Frames no Zeal)\n"
+                "    - 72% IAS (Max cap)"
             ),
             "Necromancer": (
                 "=== NECROMANCER (Necromante) ===\n\n"
@@ -993,7 +1021,15 @@ class ToolboxWindow:
                 "     8  | 39%\n"
                 "     7  | 56%  <-- Custo-benefício excelente\n"
                 "     6  | 86%  <-- Meta end-game recomendada\n"
-                "     5  | 152%"
+                "     5  | 152%\n\n"
+                "FASTER BLOCK RATE (FBR) - Velocidade de Bloqueio:\n"
+                "  Frame | FBR Necessário\n"
+                "    11  | 0%\n"
+                "    10  | 11%\n"
+                "     9  | 27%\n"
+                "     8  | 48%\n"
+                "     7  | 86%\n"
+                "     6  | 152%"
             ),
             "Amazon": (
                 "=== AMAZON (Amazona) ===\n\n"
@@ -1016,7 +1052,29 @@ class ToolboxWindow:
                 "     7  | 32%  <-- Meta básica\n"
                 "     6  | 52%  <-- Meta recomendada\n"
                 "     5  | 86%  <-- Ideal end-game\n"
-                "     4  | 174%"
+                "     4  | 174%\n\n"
+                "FASTER BLOCK RATE (FBR) - Velocidade de Bloqueio:\n"
+                "  Frame | FBR Necessário\n"
+                "    17  | 0%\n"
+                "    16  | 4%\n"
+                "    15  | 13%\n"
+                "    14  | 32%\n"
+                "    13  | 86%\n"
+                "    12  | 600%\n\n"
+                "INCREASED ATTACK SPEED (IAS) - Javelin (Arremesso):\n"
+                "  Frame | IAS Necessário\n"
+                "    14  | 0%\n"
+                "    13  | 10%\n"
+                "    12  | 26%\n"
+                "    11  | 50%  <-- Meta padrão Javazon\n"
+                "    10  | 89%  <-- Meta End-game\n"
+                "     9  | 152%\n\n"
+                "INCREASED ATTACK SPEED (IAS) - Grand Matron Bow:\n"
+                "  Frame | IAS Necessário\n"
+                "    10  | 37%\n"
+                "     9  | 63%  <-- Meta padrão\n"
+                "     8  | 89%  <-- Meta com Fé (Faith)\n"
+                "     7  | 147%"
             ),
             "Barbarian": (
                 "=== BARBARIAN (Bárbaro) ===\n\n"
@@ -1036,7 +1094,15 @@ class ToolboxWindow:
                 "     6  | 27%\n"
                 "     5  | 48%  <-- Meta ideal padrão\n"
                 "     4  | 86%  <-- Meta final\n"
-                "     3  | 200%"
+                "     3  | 200%\n\n"
+                "FASTER BLOCK RATE (FBR) - Velocidade de Bloqueio:\n"
+                "  Frame | FBR Necessário\n"
+                "     7  | 0%\n"
+                "     6  | 9%\n"
+                "     5  | 20%\n"
+                "     4  | 42%\n"
+                "     3  | 86%\n"
+                "     2  | 280%"
             ),
             "Druid": (
                 "=== DRUID (Druida - Forma Humana) ===\n\n"
@@ -1059,11 +1125,21 @@ class ToolboxWindow:
                 "     7  | 42%  <-- Meta básica\n"
                 "     6  | 63%  <-- Meta recomendada\n"
                 "     5  | 99%  <-- Ideal End-game\n"
+                "     4  | 174%\n\n"
+                "FASTER BLOCK RATE (FBR) - Velocidade de Bloqueio:\n"
+                "  Frame | FBR Necessário\n"
+                "    11  | 0%\n"
+                "    10  | 6%\n"
+                "     9  | 13%\n"
+                "     8  | 20%\n"
+                "     7  | 32%\n"
+                "     6  | 52%\n"
+                "     5  | 86%\n"
                 "     4  | 174%"
             ),
             "Assassin": (
                 "=== ASSASSIN (Assassina) ===\n\n"
-                "FASTER CAST RATE (FCR) - Conjuração:\n"
+                "FASTER CAST RATE (FCR) - Conjuração (Apenas Enigma/Teleport):\n"
                 "  Frame | FCR Necessário\n"
                 "    16  | 0%\n"
                 "    15  | 8%\n"
@@ -1080,7 +1156,22 @@ class ToolboxWindow:
                 "     6  | 27%\n"
                 "     5  | 48%  <-- Meta recomendada\n"
                 "     4  | 86%  <-- Meta final PvP\n"
-                "     3  | 200%"
+                "     3  | 200%\n\n"
+                "FASTER BLOCK RATE (FBR) - Velocidade de Bloqueio:\n"
+                "  Frame | FBR Necessário\n"
+                "     5  | 0%\n"
+                "     4  | 13%\n"
+                "     3  | 32%\n"
+                "     2  | 86%\n"
+                "     1  | 600%\n\n"
+                "INCREASED ATTACK SPEED (IAS) - Lançamento de Armadilhas (Traps):\n"
+                "  * Armadilhas usam IAS ao invés de FCR para velocidade!\n"
+                "  * Com Garras Rápidas (Greater Talons -30 WSM):\n"
+                "    Frame | IAS Necessário\n"
+                "     12 | 0%\n"
+                "     11 | 13%\n"
+                "     10 | 42%  <-- Meta ideal Trap Assassin\n"
+                "      9 | 102%"
             )
         }
         
@@ -1482,6 +1573,35 @@ class ToolboxWindow:
         for widget in self.content_frame.winfo_children():
             widget.destroy()
 
+    def pin_to_screen(self, text):
+        play_cyberpunk_beep("click")
+        if not text.strip(): return
+        
+        pin_win = tk.Toplevel(self.root)
+        pin_win.title("Pinned Guide")
+        pin_win.overrideredirect(True)
+        pin_win.attributes("-topmost", True)
+        pin_win.attributes("-alpha", 0.85)
+        pin_win.configure(bg="#050608")
+        
+        def start_drag(event):
+            pin_win._drag_start_x = event.x
+            pin_win._drag_start_y = event.y
+            
+        def do_drag(event):
+            x = pin_win.winfo_x() + event.x - pin_win._drag_start_x
+            y = pin_win.winfo_y() + event.y - pin_win._drag_start_y
+            pin_win.geometry(f"+{x}+{y}")
+            
+        pin_win.bind("<Button-1>", start_drag)
+        pin_win.bind("<B1-Motion>", do_drag)
+        
+        lbl = tk.Label(pin_win, text=text.strip(), fg="#f0f3f8", bg="#050608", font=("Consolas", 9), justify="left")
+        lbl.pack(padx=10, pady=10)
+        
+        btn_close = tk.Button(pin_win, text="[X] Fechar Overlay", command=pin_win.destroy, bg="#330000", fg="#ff2a2a", bd=1, relief="solid", font=("Yu Gothic UI", 8, "bold"))
+        btn_close.pack(pady=5)
+
     # ==================== TAB 1: BUILDS ====================
     def show_builds_tab(self):
         play_cyberpunk_beep("click")
@@ -1548,7 +1668,10 @@ class ToolboxWindow:
         
         # Text Frame & Widget for Guide Content (Modernized Style)
         txt_frame = tk.Frame(self.builds_panel, bg="#12131a", bd=1, relief="solid")
-        txt_frame.place(x=10, y=135, width=380, height=295)
+        txt_frame.place(x=10, y=135, width=380, height=265)
+        
+        btn_pin = tk.Button(self.builds_panel, text="FIXAR NA TELA (PIN)", command=lambda: self.pin_to_screen(self.text_info.get("1.0", tk.END)), bg="#12131a", fg="#00ff66", font=("Yu Gothic UI", 9, "bold"), bd=1, relief="solid")
+        btn_pin.place(x=10, y=405, width=380, height=25)
         
         self.text_info = tk.Text(
             txt_frame, 
@@ -1688,7 +1811,10 @@ class ToolboxWindow:
         
         # Description box on right
         desc_frame = tk.Frame(self.content_frame, bg="#12131a", bd=1, relief="solid")
-        desc_frame.place(x=170, y=70, width=230, height=395)
+        desc_frame.place(x=170, y=70, width=230, height=365)
+        
+        btn_pin_rw = tk.Button(self.content_frame, text="FIXAR NA TELA (PIN)", command=lambda: self.pin_to_screen(self.rw_text.get("1.0", tk.END)), bg="#12131a", fg="#00ff66", font=("Yu Gothic UI", 9, "bold"), bd=1, relief="solid")
+        btn_pin_rw.place(x=170, y=440, width=230, height=25)
         
         self.rw_text = tk.Text(
             desc_frame,
@@ -2259,7 +2385,7 @@ class ToolboxWindow:
         ).place(x=10, y=10)
         
         ctrl_frame = tk.Frame(self.content_frame, bg="#12131a", bd=1, relief="solid")
-        ctrl_frame.place(x=10, y=45, width=390, height=415)
+        ctrl_frame.place(x=10, y=45, width=390, height=490)
         
         self.topmost_var = tk.BooleanVar(value=self.app.root.attributes("-topmost"))
         cb_topmost = tk.Checkbutton(
@@ -2333,16 +2459,35 @@ class ToolboxWindow:
             bd=0
         )
         slider.place(x=18, y=170, width=350)
+        # Audio Customization
+        tk.Label(ctrl_frame, text="Tipo de Áudio:", fg="#8a99ad", bg="#12131a", font=("Yu Gothic UI", 9, "bold")).place(x=18, y=210)
+        self.audio_type_var = tk.StringVar(value=self.app.config_data.get("audio_type", "beeps"))
+        rb_beeps = tk.Radiobutton(ctrl_frame, text="Beeps", variable=self.audio_type_var, value="beeps", command=self.update_audio, bg="#12131a", fg="#aaaaaa", selectcolor="#050608", activebackground="#12131a")
+        rb_beeps.place(x=120, y=210)
+        rb_voice = tk.Radiobutton(ctrl_frame, text="Voz (Voice)", variable=self.audio_type_var, value="voice", command=self.update_audio, bg="#12131a", fg="#aaaaaa", selectcolor="#050608", activebackground="#12131a")
+        rb_voice.place(x=190, y=210)
+
+        # Backup Customization
+        tk.Label(ctrl_frame, text="Auto-Backup de Saves:", fg="#8a99ad", bg="#12131a", font=("Yu Gothic UI", 9, "bold")).place(x=18, y=250)
+        self.backup_enabled_var = tk.BooleanVar(value=self.app.config_data.get("backup_enabled", False))
+        cb_backup = tk.Checkbutton(ctrl_frame, text="Ativar Backup (A cada 30 min)", variable=self.backup_enabled_var, command=self.update_backup_enabled, bg="#12131a", fg="#8a99ad", selectcolor="#050608", activebackground="#12131a")
+        cb_backup.place(x=15, y=270)
+        
+        tk.Label(ctrl_frame, text="Caminho:", fg="#8a99ad", bg="#12131a", font=("Yu Gothic UI", 8)).place(x=18, y=300)
+        self.backup_path_var = tk.StringVar(value=self.app.config_data.get("backup_path", ""))
+        self.backup_path_var.trace_add("write", self.on_backup_path_change)
+        entry_backup = tk.Entry(ctrl_frame, textvariable=self.backup_path_var, bg="#050608", fg="#ffffff", bd=1, relief="solid", font=("Consolas", 8))
+        entry_backup.place(x=75, y=300, width=220, height=20)
+        
+        btn_backup_now = tk.Button(ctrl_frame, text="Fazer Agora", command=self.app.force_backup, bg="#330000", fg="#ff2a2a", bd=1, relief="solid", font=("Consolas", 8, "bold"))
+        btn_backup_now.place(x=300, y=300, width=75, height=20)
 
         help_text = (
             "Dicas de Uso do Kakashi Hub:\n\n"
             "• Use Scroll no HUD Principal para ajustar transparência.\n"
             "• Segure o clique esquerdo e arraste no HUD para movê-lo.\n"
-            "• Atalhos rápidos para trocar de filtro:\n"
-            "  Alt+1 (Normal)  |  Alt+2 (Elite)  |  Alt+3 (Kakashi)\n"
-            "  Alt+4 (MF)      |  Alt+5 (RW All)\n"
-            "• Cronômetro de Runs: Pressione Alt+T no jogo para split.\n"
-            "• Auto Clicker: Pressione Alt+C no jogo para ligar/desligar."
+            "• O Auto-Backup protege seus saves corrompidos (pasta Backups).\n"
+            "• Cronômetro de Runs: Pressione Alt+T no jogo para split."
         )
         
         lbl_help = tk.Label(
@@ -2357,7 +2502,23 @@ class ToolboxWindow:
             padx=10,
             pady=10
         )
-        lbl_help.place(x=18, y=240, width=350, height=155)
+        lbl_help.place(x=18, y=340, width=350, height=130)
+
+    def update_audio(self):
+        global AUDIO_TYPE
+        AUDIO_TYPE = self.audio_type_var.get()
+        self.app.config_data["audio_type"] = AUDIO_TYPE
+        save_config(self.app.config_data)
+        play_cyberpunk_beep("click")
+        
+    def update_backup_enabled(self):
+        self.app.config_data["backup_enabled"] = self.backup_enabled_var.get()
+        save_config(self.app.config_data)
+        play_cyberpunk_beep("click")
+        
+    def on_backup_path_change(self, *args):
+        self.app.config_data["backup_path"] = self.backup_path_var.get()
+        save_config(self.app.config_data)
 
     def update_topmost(self):
         val = self.topmost_var.get()
@@ -2727,7 +2888,252 @@ class ToolboxWindow:
         except ValueError:
             pass
 
+    # ==================== TAB 8: PRIME FORGE ====================
+    def show_forge_tab(self):
+        play_cyberpunk_beep("click")
+        self.clear_content()
+        
+        tk.Label(
+            self.content_frame,
+            text="FORJA SAGRADA (PRIME DIABLO FORGE)",
+            fg="#ffffff",
+            bg="#0b0c10",
+            font=("Yu Gothic UI", 11, "bold")
+        ).place(x=10, y=10)
+        
+        # Buttons for Forge Categories
+        self.create_flat_button(self.content_frame, "Weapons", lambda: self.show_forge_info("Weapons"), 10, 40, 100)
+        self.create_flat_button(self.content_frame, "Body Armor", lambda: self.show_forge_info("Body Armor"), 120, 40, 100)
+        self.create_flat_button(self.content_frame, "Shield", lambda: self.show_forge_info("Shield"), 230, 40, 100)
+        self.create_flat_button(self.content_frame, "Helms", lambda: self.show_forge_info("Helms"), 340, 40, 100)
+        
+        self.create_flat_button(self.content_frame, "Gloves", lambda: self.show_forge_info("Gloves"), 10, 75, 100)
+        self.create_flat_button(self.content_frame, "Belt", lambda: self.show_forge_info("Belt"), 120, 75, 100)
+        self.create_flat_button(self.content_frame, "Boots", lambda: self.show_forge_info("Boots"), 230, 75, 100)
+        self.create_flat_button(self.content_frame, "Rings", lambda: self.show_forge_info("Rings"), 340, 75, 100)
 
+        self.create_flat_button(self.content_frame, "Amulet", lambda: self.show_forge_info("Amulet"), 10, 110, 100)
+        self.create_flat_button(self.content_frame, "Arrow/Bolts", lambda: self.show_forge_info("Arrow/Bolts"), 120, 110, 100)
+        
+        # Display Box
+        disp_frame = tk.Frame(self.content_frame, bg="#12131a", bd=1, relief="solid")
+        disp_frame.place(x=10, y=145, width=430, height=390)
+        
+        self.forge_text = tk.Text(
+            disp_frame,
+            bg="#050608",
+            fg="#f0f3f8",
+            bd=0,
+            padx=10,
+            pady=10,
+            font=("Consolas", 10)
+        )
+        self.forge_text.pack(side="left", fill="both", expand=True)
+        
+        self.forge_db = {
+            "Weapons": "=== WEAPONS (Armas) ===\n\n+2 Class Skills (Ber)",
+            "Body Armor": "=== BODY ARMOR (Armaduras) ===\n\n+2 Class Skills (Ber)",
+            "Shield": "=== SHIELD (Escudos) ===\n\n+1 Class Skills (Ber)",
+            "Helms": "=== HELMS (Elmos) ===\n\n+1 Class Skills (Ber)",
+            "Gloves": "=== GLOVES (Luvas) ===\n\nKnockback (Ohm)\n+10 IAS & 50% Enhanced Damage (Lo)\n+50 Life (Sur)\nCold Skill Dmg +15% (Ber)",
+            "Belt": "=== BELT (Cintos) ===\n\nPiercing Attack +20% (Ohm)\nFaster Cast Rate +10% (Lo)\nDeadly Strike +15% (Sur)\nFire Skill Dmg +15% (Ber)",
+            "Boots": "=== BOOTS (Botas) ===\n\nEnhanced Damage +50% (Ohm)\nFaster Hit Recovery +10% (Lo)\nAll Resistences +15% (Sur)\nLight Skill Dmg +15% (Ber)",
+            "Rings": "=== RINGS (Anéis) ===\n\n+30% Magic Find (Ohm)\n+5% XP (Lo)\n+8% Magic Skill Damage (Sur)\n+90 Life (Ber)",
+            "Amulet": "=== AMULET (Amuletos) ===\n\n+10% Chance to Block (Ohm)\n+5% XP (Lo)\n+50 Life (Sur)\n+15% Poison Skill Damage (Ber)",
+            "Arrow/Bolts": "=== ARROW/BOLTS (Flechas/Virotes) ===\n\n+400 Attack Rating (Ohm)\n+10% IAS & 50% Enhanced Damage (Lo)\n+Ignores Target's Defense (Sur)"
+        }
+        
+        self.show_forge_info("Weapons")
+        
+    def show_forge_info(self, item_type):
+        text_content = self.forge_db.get(item_type, "")
+        if hasattr(self, 'forge_text'):
+            self.forge_text.configure(state="normal")
+            self.forge_text.delete("1.0", tk.END)
+            self.forge_text.insert(tk.END, text_content)
+            self.forge_text.configure(state="disabled")
+
+    # ==================== TAB 9: CUBE RECIPES ====================
+    def show_cube_tab(self):
+        play_cyberpunk_beep("click")
+        self.clear_content()
+        
+        tk.Label(
+            self.content_frame,
+            text="FÓRMULAS DO CUBO (CUBE RECIPES)",
+            fg="#ffffff",
+            bg="#0b0c10",
+            font=("Yu Gothic UI", 11, "bold")
+        ).place(x=10, y=10)
+        
+        list_frame = tk.Frame(self.content_frame, bg="#12131a", bd=1, relief="solid")
+        list_frame.place(x=10, y=40, width=150, height=500)
+        
+        scrollbar = ttk.Scrollbar(list_frame, orient="vertical")
+        scrollbar.pack(side="right", fill="y")
+        
+        self.cube_list = tk.Listbox(
+            list_frame,
+            bg="#050608",
+            fg="#aaaaaa",
+            selectbackground="#330000",
+            selectforeground="#ff2a2a",
+            bd=0,
+            highlightthickness=0,
+            font=("Consolas", 10),
+            yscrollcommand=scrollbar.set
+        )
+        self.cube_list.pack(side="left", fill="both", expand=True)
+        scrollbar.config(command=self.cube_list.yview)
+        
+        detail_frame = tk.Frame(self.content_frame, bg="#12131a", bd=1, relief="solid")
+        detail_frame.place(x=170, y=40, width=280, height=500)
+        
+        self.cube_text = tk.Text(
+            detail_frame,
+            bg="#050608",
+            fg="#f0f3f8",
+            bd=0,
+            padx=10,
+            pady=10,
+            font=("Consolas", 10),
+            wrap="word"
+        )
+        self.cube_text.pack(fill="both", expand=True)
+        
+        self.cube_db = {
+            "Blood Weapon": "Magical Axe (any)\nJewel (any)\nOrt Rune (#9)\n\nPreset Mods:\n1-4% Life Leech\n+10-20 Hit Points\n+35-60% Damage",
+            "Blood Helm": "Magical Helm or Casque (Excep) or Armet (Elite)\nJewel (any)\nRal Rune (#8)\n\nPreset Mods:\n1-4% Life Leech\n+10-20 Hit Points\n5-10% chance of Deadly Strike",
+            "Blood Armor": "Magical Plate Mail or Templar Plate or Hellforge Plate\nJewel (any)\nThul Rune (#10)\n\nPreset Mods:\n1-3% Life Steal\n+10-20 Hit points\n1-3 Demon Heal",
+            "Blood Gloves": "Magical Heavy or Sharkskin Gloves or Vampirebone Gloves\nJewel (any)\nNef Rune (#4)\n\nPreset Mods:\n1-3% Life Leech\n+10-20 Hit Points\n5-10% Crushing Blow",
+            "Blood Belt": "Magical Belt or Mesh Belt or Mithril Coil\nJewel (any)\nTal Rune (#7)\n\nPreset Mods:\n1-3% Life Leech\n+10-20 Hit Points\nOpen Wounds 5-10%",
+            "Blood Boots": "Magical Light Plated Boots or Battle Boots or Mirrored Boots\nJewel (any)\nEth Rune (#5)\n\nPreset Mods:\n1-3% Life Leech\n+10-20 Hit Points\n+5-10 Life Regeneration",
+            "Blood Shield": "Magical Spiked Shield or Barbed Shield or Blade Barrier\nJewel (any)\nIth Rune (#6)\n\nPreset Mods:\n1-4% Life Steal\n+10-20 Hit Points\nAttacker takes 4-7 damage",
+            "Blood Amulet": "Magical Amulet\nJewel (any)\nAmn Rune (#11)\n\nPreset Mods:\n1-4% Life Steal\n+10-20 Hit Points\n5-10% Faster Walk/Run",
+            "Blood Ring": "Magical Ring\nJewel (any)\nSol Rune (#12)\n\nPreset Mods:\n1-3% Life Leech\n+10-20 Hit Points\n+1-5 Strength",
+            "Caster Weapon": "Magical Rod (any)\nJewel (any)\nTir Rune (#3)\n\nPreset Mods:\n4-10% Regenerate Mana\n+10-20 Mana\n+1-5% Mana Steal",
+            "Caster Helm": "Magical Mask or Death Mask or Demonhead\nJewel (any)\nNef Rune (#4)\n\nPreset Mods:\n4-10% Regenerate Mana\n+10-20 Mana\n1-4% Mana Steal",
+            "Caster Armor": "Magical Light Plate or Mage Plate or Archon Plate\nJewel (any)\nTal Rune (#7)\n\nPreset Mods:\nRegenerate Mana 4-12%\n+10-20 Mana\n+1-3 Mana Per Kill",
+            "Caster Gloves": "Magical Leather Gloves or Demonhide Gloves or Bramble Mitts\nJewel (any)\nOrt Rune (#9)\n\nPreset Mods:\n+4-10% Faster Mana Regen\n+10-20 Mana\n+1-3 Mana Per Kill",
+            "Caster Belt": "Magical Light Belt or Sharkskin Belt or Vampirefang Belt\nJewel (any)\nIth Rune (#6)\n\nPreset Mods:\n4-10% Regenerate Mana\n+10-20 Mana\n+5-10% Faster Cast",
+            "Caster Boots": "Magical Leather Boots or Demonhide Boots or Wyrmhide Boots\nJewel (any)\nThul Rune (#10)\n\nPreset Mods:\nRegenerate Mana 4-10%\nMana +10-20\nMax Mana +2-5%",
+            "Caster Shield": "Magical Small Shield or Round Shield or Luna\nJewel (any)\nEth Rune (#5)\n\nPreset Mods:\n+4-10% Regenerate Mana\n+10-20 Mana\n+5-10 Blocking Percentage",
+            "Caster Amulet": "Magical Amulet\nJewel (any)\nRal Rune (#8)\n\nPreset Mods:\n4-10% Regenerate Mana\n+10-20 Mana\nFaster Cast 5-10%",
+            "Caster Ring": "Magical Ring\nJewel (any)\nAmn Rune (#11)\n\nPreset Mods:\n4-10% Regenerate Mana\n+10-20 Mana\n+1-5 Energy",
+            "Hitpower Weapon": "Magical Blunt Weapon\nJewel (any)\nTir Rune (#3)\n\nPreset Mods:\n5% Frost Nova\nAttacker Takes 3-7 Dmg\n+35-60% Enhanced Damage",
+            "Hitpower Helm": "Magical Full Helm or Basinet or Giant Conch\nJewel (any)\nIth Rune (#6)\n\nPreset Mods:\n5% Frost Nova\nAttacker takes 3-7 dmg\n+25-50 Defense vs Missiles",
+            "Hitpower Armor": "Magical Field Plate or Sharktooth or Kraken Shell\nJewel (any)\nNef Rune (#4)\n\nPreset Mods:\n5% Frost Nova\nAttacker takes 3-10 dmg\n10-20% FHR",
+            "Hitpower Gloves": "Magical Chain Gloves or Heavy Bracers or Vambraces\nJewel (any)\nOrt Rune (#9)\n\nPreset Mods:\n5% Frost Nova\n+3-7 Damage to Attacker\nKnockback",
+            "Hitpower Belt": "Magical Heavy Belt or Battle Belt or Troll Belt\nJewel (any)\nTal Rune (#7)\n\nPreset Mods:\n5% Frost Nova\nAttacker takes 3-7 dmg\n5-10% Damage to Mana",
+            "Hitpower Boots": "Magical Chain Boots or Mesh Boots or Boneweave\nJewel (any)\nRal Rune (#8)\n\nPreset Mods:\n5% Frost Nova\nAttacker takes 3-7 dmg\n+25-60 Defense vs Melee",
+            "Hitpower Shield": "Magical Gothic Shield or Ancient or Ward\nJewel (any)\nEth Rune (#5)\n\nPreset Mods:\n5% Frost Nova\nAttacker takes 3-10 dmg\n+5-10% Blocking",
+            "Hitpower Amulet": "Magical Amulet\nJewel (any)\nThul Rune (#10)\n\nPreset Mods:\n5% Frost Nova\nAttacker takes 3-10 dmg\n5-15% Monster Flee",
+            "Hitpower Ring": "Magical Ring\nJewel (any)\nAmn Rune (#11)\n\nPreset Mods:\n5% Frost Nova\nAttacker takes 3-6 dmg\n+1-5 Dexterity",
+            "Safety Weapon": "Magical Spear (any)\nJewel (any)\nSol Rune (#12)\n\nPreset Mods:\nReduced Damage 1-4\nReduced Magic Dmg 1-2\n+5-10% Defense",
+            "Safety Helm": "Magical Crown or Grand Crown or Corona\nJewel (any)\nIth Rune (#6)\n\nPreset Mods:\nReduces Damage 1-4\nReduces Magic Dmg 1-2\n+5-10% Light Res\n+10-30% Def",
+            "Safety Armor": "Magical Breast Plate or Curiass or Great Hauberk\nJewel (any)\nEth Rune (#5)\n\nPreset Mods:\nReduces Damage 3-9\nReduces Magic Dmg 2-5\nHalf Freeze Duration\n+10-30% Def",
+            "Safety Gloves": "Magical Gauntlets or War Gauntlets or Ogre Gauntlets\nJewel (any)\nRal Rune (#8)\n\nPreset Mods:\nReduces Damage 1-4\nReduces Magic Dmg 1-2\n+5-10% Cold Res\n+10-33% Def",
+            "Safety Belt": "Magical Sash or Demonhide Sash or Spiderweb Sash\nJewel (any)\nTal Rune (#7)\n\nPreset Mods:\nReduces Damage 3-9\nReduces Magic Dmg 2-5\n5-10% Poison Res\n+10-30% Def",
+            "Safety Boots": "Magical Greaves or War Boots or Myrmidon Boots\nJewel (any)\nOrt Rune (#9)\n\nPreset Mods:\nReduces Damage 1-4\nReduces Magic Dmg 1-2\n5-10% Fire Res\n+10-30% Def",
+            "Safety Shield": "Magical Kite Shield or Dragon Shield or Monarch\nJewel (any)\nNef Rune (#4)\n\nPreset Mods:\nReduces Damage 1-4\nReduces Magic Dmg 1-2\n5-10% Magic Res\n+10-30% Def",
+            "Safety Amulet": "Magical Amulet\nJewel (any)\nThul Rune (#10)\n\nPreset Mods:\nReduces Damage 1-4\nReduces Magic Dmg 1-2\n+1-10% Blocking",
+            "Safety Ring": "Rare or Magical Ring\nJewel (any)\nAmn Rune (#11)\n\nPreset Mods:\nReduces Damage 1-4\nReduces Magic Dmg 1-2\n+1-5 Vitality",
+        }
+        
+        for k in self.cube_db.keys():
+            self.cube_list.insert(tk.END, k)
+            
+        self.cube_list.bind("<<ListboxSelect>>", self.on_cube_select)
+        
+    def on_cube_select(self, event):
+        selection = event.widget.curselection()
+        if selection:
+            idx = selection[0]
+            name = event.widget.get(idx)
+            text = self.cube_db.get(name, "")
+            
+            self.cube_text.configure(state="normal")
+            self.cube_text.delete("1.0", tk.END)
+            self.cube_text.insert(tk.END, text)
+            self.cube_text.configure(state="disabled")
+            play_cyberpunk_beep("click")
+
+    # ==================== TAB 10: HOLY GRAIL ====================
+    def show_grail_tab(self):
+        play_cyberpunk_beep("click")
+        self.clear_content()
+        
+        tk.Label(
+            self.content_frame,
+            text="HOLY GRAIL (ITENS RAROS)",
+            fg="#ee00ff",
+            bg="#0b0c10",
+            font=("Yu Gothic UI", 11, "bold")
+        ).place(x=10, y=10)
+        
+        saved_grail = self.app.config_data.get("grail_items", [])
+        
+        grail_frame = tk.Frame(self.content_frame, bg="#12131a", bd=1, relief="solid")
+        grail_frame.place(x=10, y=40, width=440, height=500)
+        
+        canvas = tk.Canvas(grail_frame, bg="#050608", highlightthickness=0)
+        scrollbar = ttk.Scrollbar(grail_frame, orient="vertical", command=canvas.yview)
+        scrollable_frame = tk.Frame(canvas, bg="#050608")
+        
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+        
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+        
+        top_30_grail = [
+            "Tyrael's Might", "Death's Fathom", "Griffon's Eye", "Crown of Ages",
+            "Windforce", "Astreon's Iron Ward", "Mang Song's Lesson", "Darkforce Spawn",
+            "The Grandfather", "Death's Web", "Schaefer's Hammer", "Templar's Might",
+            "Gargoyle's Bite", "Ghostflame", "Earth Shifter", "Stormlash", "Halaberd's Reign",
+            "Dragonscale", "Steel Rend", "Nightwing's Veil", "Shadow Dancer", "Boneshade",
+            "Zod Rune", "Cham Rune", "Jah Rune", "Ber Rune", "Sur Rune", "Lo Rune", "Ohm Rune", "Vex Rune"
+        ]
+        
+        self.grail_vars = {}
+        for idx, item in enumerate(top_30_grail):
+            var = tk.BooleanVar(value=(item in saved_grail))
+            self.grail_vars[item] = var
+            
+            cb = tk.Checkbutton(
+                scrollable_frame,
+                text=item,
+                variable=var,
+                command=lambda i=item: self.update_grail(i),
+                bg="#050608",
+                fg="#f0f3f8" if item not in saved_grail else "#00ff66",
+                selectcolor="#12131a",
+                activebackground="#050608",
+                activeforeground="#ffffff",
+                font=("Consolas", 10, "bold")
+            )
+            cb.pack(anchor="w", padx=10, pady=2)
+            
+    def update_grail(self, item):
+        saved_grail = self.app.config_data.get("grail_items", [])
+        is_checked = self.grail_vars[item].get()
+        
+        if is_checked and item not in saved_grail:
+            saved_grail.append(item)
+            play_cyberpunk_beep("success")
+        elif not is_checked and item in saved_grail:
+            saved_grail.remove(item)
+            play_cyberpunk_beep("click")
+            
+        self.app.config_data["grail_items"] = saved_grail
+        save_config(self.app.config_data)
+        
+        self.show_grail_tab()
 
     def sync_from_app(self):
         if hasattr(self, 'autopot_hp_var'): self.autopot_hp_var.set(self.app.autopot_hp_enabled)
@@ -2875,10 +3281,15 @@ class KakashiHubApp:
         # Load persistent configuration
         self.config_data = load_config()
         self.current_profile = self.config_data.get("current_profile", "PvP")
+        
+        global AUDIO_TYPE
+        AUDIO_TYPE = self.config_data.get("audio_type", "beeps")
+        
         self.load_profile_data(self.current_profile)
         
-        # Start AutoPot background loop thread
+        # Start background loop threads
         threading.Thread(target=self.autopot_loop, daemon=True).start()
+        threading.Thread(target=self.backup_loop, daemon=True).start()
         
         # Drag and drop events
         self.canvas.bind("<Button-1>", self.start_drag)
@@ -3292,7 +3703,7 @@ class KakashiHubApp:
         play_cyberpunk_beep("click")
         self.toolbox_instance = ToolboxWindow(self)
         
-    # Forced Update Configs Downloader
+    # Forced Update Configs Downloader & Self-Updater
     def force_update_configs(self):
         log_debug("Forced config update initiated.")
         play_cyberpunk_beep("click")
@@ -3300,6 +3711,8 @@ class KakashiHubApp:
         def run_update():
             self.canvas.itemconfig(self.status_text, text="[BAIXANDO...]", fill="#ff9900")
             success = True
+            
+            # 1. Baixar as configurações (arquivos da lista cfgs)
             for name, url in cfgs.items():
                 path = os.path.join(base_path, name)
                 # Force download overwriting existing config files
@@ -3307,8 +3720,43 @@ class KakashiHubApp:
                     success = False
                 time.sleep(0.1)
                 
+            # 2. Baixar a atualização do PRÓPRIO programa
+            is_exe = getattr(sys, 'frozen', False)
+            if is_exe:
+                # Atualizando a versão .exe
+                # Atenção: Certifique-se de que o executável no GitHub se chame PrimeHub.exe
+                program_url = "https://raw.githubusercontent.com/ghkusanagy-hub/KakashiHub/main/PrimeHub.exe"
+                new_exe_path = os.path.join(base_path, "PrimeHub_update.exe")
+                
+                if download_file(program_url, new_exe_path, timeout=10):
+                    log_debug("New EXE downloaded. Creating update script...")
+                    bat_path = os.path.join(base_path, "update.bat")
+                    current_exe = sys.executable
+                    # Cria um script temporário para trocar os arquivos após o programa fechar
+                    with open(bat_path, "w") as f:
+                        f.write('@echo off\n')
+                        f.write('timeout /t 2 /nobreak >nul\n') # Espera o app fechar
+                        f.write(f'del "{current_exe}"\n')
+                        f.write(f'move /y "{new_exe_path}" "{current_exe}"\n')
+                        f.write(f'start "" "{current_exe}"\n')
+                        f.write('del "%~f0"\n') # O script deleta a si mesmo
+                    
+                    self.canvas.itemconfig(self.status_text, text="[REINICIANDO]", fill="#00ff00")
+                    import subprocess
+                    subprocess.Popen(bat_path, shell=True)
+                    os._exit(0) # Força o fechamento imediato para o bat poder substituir
+                else:
+                    success = False
+            else:
+                # Atualizando a versão .py
+                program_url = "https://raw.githubusercontent.com/ghkusanagy-hub/KakashiHub/main/PrimeHub.py"
+                program_path = os.path.abspath(sys.argv[0])
+                if not download_file(program_url, program_path, timeout=5):
+                    success = False
+
+            # Resultado final (só chega aqui se for .py ou se falhar no .exe)
             if success:
-                log_debug("Config update complete.")
+                log_debug("Config & Program update complete.")
                 self.canvas.itemconfig(self.status_text, text="[CONCLUIDO]", fill="#00ff00")
                 play_cyberpunk_beep("success")
             else:
@@ -3409,6 +3857,41 @@ class KakashiHubApp:
         self.active_alerts.append(alert)
         if len(self.active_alerts) > 3:
             self.active_alerts.pop(0)
+
+    def force_backup(self):
+        play_cyberpunk_beep("click")
+        path = self.config_data.get("backup_path", "")
+        if not path or not os.path.exists(path):
+            log_debug("Backup path is invalid or empty.")
+            play_cyberpunk_beep("fail")
+            self.add_alert("CAMINHO DE BACKUP INVÁLIDO!", "#ff2a2a")
+            return
+            
+        backup_dir = os.path.join(base_path, "Backups")
+        if not os.path.exists(backup_dir):
+            os.makedirs(backup_dir)
+            
+        timestamp = time.strftime("%Y%m%d_%H%M%S")
+        zip_path = os.path.join(backup_dir, f"Save_Backup_{timestamp}")
+        
+        def do_backup():
+            try:
+                shutil.make_archive(zip_path, 'zip', path)
+                log_debug(f"Backup successful: {zip_path}.zip")
+                play_cyberpunk_beep("success")
+                self.add_alert("BACKUP SALVO!", "#00ff66")
+            except Exception as e:
+                log_debug(f"Backup failed: {e}")
+                play_cyberpunk_beep("fail")
+                
+        threading.Thread(target=do_backup, daemon=True).start()
+
+    def backup_loop(self):
+        log_debug("Backup monitoring thread loop started.")
+        while True:
+            time.sleep(1800) # 30 minutes
+            if self.config_data.get("backup_enabled", False):
+                self.force_backup()
 
     def autopot_loop(self):
         log_debug("AutoPot monitoring thread loop started.")
